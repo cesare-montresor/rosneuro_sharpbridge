@@ -1,0 +1,8 @@
+MessageGeneration/bin
+MessageGeneration/obj
+
+RosBridgeClient/bin
+RosBridgeClient/obj
+
+rosneuro_sharpbridge/bin
+rosneuro_sharpbridge/obj
