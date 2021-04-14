@@ -9,17 +9,17 @@ Internally rossharp use websockets to integrate with the rest of the architectur
 
 
 
-# Setup rosbridge_server
+## Setup rosbridge_server
 
-install the dependency for ROS: 
+1. install the dependency for ROS: 
 
     sudo apt-get install ros-<ROS_DISTRO>-rosbridge-suite
 
-create a launcher  
+2. create a launcher  
 
     vi start_bridge.launch
 
-start_bridge.launch
+example of start_bridge.launch
 
     <launch>
       <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" > 
@@ -28,7 +28,7 @@ start_bridge.launch
       </include>
     </launch>
 
-## start the bridge
+3. start the bridge
     roslaunch start_bridge.launch
 
 
