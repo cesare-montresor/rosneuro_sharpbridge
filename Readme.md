@@ -1,6 +1,6 @@
 # This project is a stub
 
-## Known issues:
+## Known TODOs:
 - incorrect value-passing between thread
 - Data type it's a mtd_msg.String
 
