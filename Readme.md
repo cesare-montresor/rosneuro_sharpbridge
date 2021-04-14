@@ -37,7 +37,7 @@ example of start_bridge.launch
 - Data type it's a mtd_msg.String
 
 
-# External references:
-ROSNeuro: https://github.com/rosneuro  
-rosbridge_suite: http://wiki.ros.org/rosbridge_suite
-ros-sharp: https://github.com/siemens/ros-sharp
+# External references:    
+ROSNeuro: https://github.com/rosneuro     
+rosbridge_suite: http://wiki.ros.org/rosbridge_suite    
+ros-sharp: https://github.com/siemens/ros-sharp    
