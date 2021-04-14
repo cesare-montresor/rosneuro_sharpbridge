@@ -11,14 +11,16 @@ Internally rossharp use websockets to integrate with the rest of the architectur
 
 # Setup rosbridge_server
 
-## install the dependency for ROS: 
+install the dependency for ROS: 
 
     sudo apt-get install ros-<ROS_DISTRO>-rosbridge-suite
 
-## create a launcher 
+create a launcher  
+
     vi start_bridge.launch
 
-## start_bridge.launch
+start_bridge.launch
+
     <launch>
       <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" > 
          <arg name="port" value="8080"/>
