@@ -1,4 +1,11 @@
-**This project is a stub**
+# This project is a stub
+
+## Known issues:
+- incorrect value-passing between thread
+- Data type it's a mtd_msg.String
+
+
+
 
 # Summary
 
@@ -31,10 +38,6 @@ example of start_bridge.launch
 3. start the bridge
     roslaunch start_bridge.launch
 
-
-# Known issues:
-- inncorect value-passing between thread
-- Data type it's a mtd_msg.String
 
 
 # External references:    
