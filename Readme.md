@@ -2,7 +2,7 @@
 
 ## Known TODOs:
 - incorrect value-passing between thread
-- Data type it's a mtd_msg.String
+- Data type it's a std_msg.String
 
 
 
