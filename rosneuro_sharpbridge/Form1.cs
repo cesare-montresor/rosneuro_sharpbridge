@@ -32,7 +32,7 @@ namespace rosneuro_sharpbridge
         {
             var addressPort = addressTxt.Text.ToString(); //"ws://192.168.1.37:8080";
             connector.Connect(addressPort);
-            connector.StartData();
+            connector.StartDataStreamer();
 
         }
 
