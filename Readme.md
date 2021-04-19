@@ -1,5 +1,6 @@
 # TODO: 
-Refactor the code according to the desired SDK.
+- Improve UI to display info about the state of the node and to accomodate headset settings.
+- Refactor the code according to the desired SDK.
 
 # Summary
 
