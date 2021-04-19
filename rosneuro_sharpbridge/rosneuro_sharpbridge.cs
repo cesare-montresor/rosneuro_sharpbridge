@@ -16,7 +16,8 @@ using System.Threading;
 namespace rosneuro_sharpbridge
 {
 
-    public class SharedConfig {
+    public class SharedConfig
+    {
 
         public rosneuro_sharpbridge node;
 
@@ -31,6 +32,8 @@ namespace rosneuro_sharpbridge
         public RosSocket socket;
         // TOPICS
         public string get_data_topic_id; // data
+        public string get_strm_topic_id; // stream on/off
+        public string set_strm_topic_id;
         public string get_nchan_topic_id; // num_channels
         public string set_nchan_topic_id;
         public string get_srate_topic_id; // sample_rate
@@ -48,18 +51,18 @@ namespace rosneuro_sharpbridge
         public bool headset_initialized = false;
         public int sample_rate;
         public int num_channels;
-        public bool stream_data;
-        
+        public bool steaming_data;
+
         // Controller
         public WorkerController controller_worker;
         public Thread controller_thread;
-    
+
         // Data Streamer
         public WorkerDataStreamer data_worker;
         public Thread data_thread;
 
 
-      
+
     }
 
     public class rosneuro_sharpbridge
@@ -78,29 +81,97 @@ namespace rosneuro_sharpbridge
 
 
         // sensible defaults ?
-        public rosneuro_sharpbridge(string node_name = "sharpbridge", int sample_rate = 512, int num_channels = 16)
+        public rosneuro_sharpbridge(string node_name = "sharpbridge", int sample_rate = 512, int num_channels = 16, bool autostart = true)
         {
             config.node = this;
             config.node_name = node_name;
             config.sample_rate = sample_rate;
             config.num_channels = num_channels;
+            config.steaming_data = autostart;
 
-            config.controller_hz = 10;
-            config.data_streamer_hz = 0;
+            config.controller_hz = 1;
+            config.data_streamer_hz = 1;
 
             config.controller_worker = new WorkerController(config);
             config.data_worker = new WorkerDataStreamer(config);
         }
 
+
+        public string BuildTopic(params string[] parts)
+        {
+            string path = String.Join("/", parts);
+            return String.Format("/{0}/{1}", config.node_name, path);
+        }
+
+        #region control the node via c#/form
         public void Connect(string uri)
-        {           
+        {
             if (config.socket == null)
             {
                 config.socket = new RosSocket(new RosSharp.RosBridgeClient.Protocols.WebSocketSharpProtocol(uri));
+                Init();
                 StartController();
             }
         }
-        
+
+        public void Diconnect()
+        {
+            if (config.socket != null)
+            {
+                StopController();
+                StopDataStreamer();
+                Deinit();
+
+
+                config.socket.Close();
+                config.socket = null;
+            }
+        }
+
+
+        public void Init()
+        {
+            lock (config.SocketLock)
+            {
+                //Data
+                config.get_data_topic_id = config.socket.Advertise<std_msgs.String>(BuildTopic(TOPIC_DATA));
+
+                //Data on/off
+                config.get_strm_topic_id = config.socket.Advertise<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_GET, OPTION_STREAMING_DATA));
+                config.set_strm_topic_id = config.socket.Subscribe<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_SET, OPTION_STREAMING_DATA), config.node.OnSampleRateUpdate, queue_length: 1);
+
+                //Info
+                config.get_srate_topic_id = config.socket.Advertise<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_GET, OPTION_SAMPLE_RATE));
+                config.set_srate_topic_id = config.socket.Subscribe<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_SET, OPTION_SAMPLE_RATE), config.node.OnSampleRateUpdate, queue_length: 1);
+
+                //config
+                config.get_nchan_topic_id = config.socket.Advertise<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_GET, OPTION_NUM_CHANNELS));
+                config.set_nchan_topic_id = config.socket.Subscribe<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_SET, OPTION_NUM_CHANNELS), config.node.OnNumChannelUpdate, queue_length: 1);
+
+                //TODO: if any id is null, something failed, handle it
+            }
+        }
+
+        public void Deinit()
+        {
+            lock (config.SocketLock)
+            {
+                //Data
+                config.socket.Unadvertise(config.get_data_topic_id);
+                config.socket.Unadvertise(config.get_strm_topic_id);
+                config.socket.Unsubscribe(config.set_strm_topic_id);
+
+                //Info
+                config.socket.Unadvertise(config.get_srate_topic_id);
+                config.socket.Unsubscribe(config.set_srate_topic_id);
+
+                //config
+                config.socket.Unadvertise(config.get_nchan_topic_id);
+                config.socket.Unsubscribe(config.set_nchan_topic_id);
+            }
+        }
+
+
         public void StartController()
         {
             if (config.controller_thread == null)
@@ -121,8 +192,9 @@ namespace rosneuro_sharpbridge
 
         public void StartDataStreamer()
         {
-            if (config.data_thread == null) {
-                
+            if (config.data_thread == null)
+            {
+
                 config.data_thread = new Thread(new ThreadStart(config.data_worker.Loop));
                 config.data_thread.Start();
             }
@@ -136,74 +208,11 @@ namespace rosneuro_sharpbridge
                 config.data_thread = null;
             }
         }
-        
-
-        public void Diconnect()
-        {
-            if (config.socket != null){
-                StopController();
-                StopDataStreamer();
-
-                
-
-                config.socket.Close();
-                config.socket = null;
-            }
-        }
-
-
-
-        #region Topic string assembly
-        public string SetNumChannelsTopic()
-        {
-            return BuildTopic(TOPIC_SETTINGS_SET, OPTION_NUM_CHANNELS);
-        }
-
-        public string GetNumChannelsTopic()
-        {
-            return BuildTopic(TOPIC_SETTINGS_GET, OPTION_NUM_CHANNELS);
-        }
-
-
-        public string SetSampleRateTopic()
-        {
-            return BuildTopic(TOPIC_SETTINGS_SET, OPTION_SAMPLE_RATE);
-        }
-
-        public string GetSampleRateTopic()
-        {
-            return BuildTopic(TOPIC_SETTINGS_GET, OPTION_SAMPLE_RATE);
-        }
-
-
-        public string DataTopic()
-        {
-            return BuildTopic(TOPIC_DATA);
-        }
-
-        public string BuildTopic(params string[] parts)
-        {
-            string path = String.Join("/", parts);
-            return String.Format("/{0}/{1}", config.node_name, path);
-        }
-
         #endregion
-    }
 
 
-    public class Worker {
-        public SharedConfig config;
 
-        public Worker(SharedConfig config)
-        {
-            this.config = config;
-        }
-    }
-
-    public class WorkerController: Worker
-    {
-        public WorkerController(SharedConfig config) : base(config) { }
-
+        #region On Recive Commands (/settings) 
 
         public void OnNumChannelUpdate(std_msgs.Int32 num_channels)
         {
@@ -218,7 +227,7 @@ namespace rosneuro_sharpbridge
             }
 
 
-            if (changed) { OnSettingsChanged();}
+            if (changed) { OnSettingsChanged(); }
         }
 
         public void OnSampleRateUpdate(std_msgs.Int32 sample_rate)
@@ -235,6 +244,20 @@ namespace rosneuro_sharpbridge
             if (changed) { OnSettingsChanged(); }
         }
 
+        public void OnStreamingDataUpdate(std_msgs.Bool steaming_data)
+        {
+            var changed = false;
+            lock (config.ConfigLock)
+            {
+                if (config.steaming_data != steaming_data.data)
+                {
+                    config.steaming_data = steaming_data.data;
+                    changed = true;
+                }
+            }
+            if (changed) { OnSettingsChanged(); }
+        }
+
         public void OnSettingsChanged()
         {
             lock (config.ConfigLock)
@@ -244,28 +267,33 @@ namespace rosneuro_sharpbridge
             }
         }
 
+        #endregion       
 
-        public void Init() {
 
-            lock (config.SocketLock) { 
-                //Data
-                config.get_data_topic_id = config.socket.Advertise<std_msgs.String>(config.node.DataTopic());
+    }
 
-                //Info
-                config.get_srate_topic_id = config.socket.Advertise<std_msgs.Int32>(config.node.GetSampleRateTopic());
-                config.set_srate_topic_id = config.socket.Subscribe<std_msgs.Int32>(config.node.SetSampleRateTopic(), config.controller_worker.OnSampleRateUpdate);
 
-                //config
-                config.get_nchan_topic_id = config.socket.Advertise<std_msgs.Int32>(config.node.GetNumChannelsTopic());
-                config.set_nchan_topic_id = config.socket.Subscribe<std_msgs.Int32>(config.node.SetNumChannelsTopic(), config.controller_worker.OnNumChannelUpdate);
-            }
+    #region Workers ( Controller & Data )
+
+    public class Worker
+    {
+        public SharedConfig config;
+
+        public Worker(SharedConfig config)
+        {
+            this.config = config;
         }
-        
+    }
+
+    public class WorkerController : Worker
+    {
+        public WorkerController(SharedConfig config) : base(config) { }
+
         public void Loop()
         {
-            var msec_pause = (config.controller_hz < 1) ? 0 : 1000 / config.controller_hz;
-            var msg_nchan = new std_msgs.Int32();
-            var msg_srate = new std_msgs.Int32();
+            var msec_pause = (config.controller_hz < 1) ? 1 : 1000 / config.controller_hz;
+            std_msgs.Int32 msg_nchan = new std_msgs.Int32();
+            std_msgs.Int32 msg_srate = new std_msgs.Int32();
             while (true)
             {
                 lock (config.ConfigLock)
@@ -273,7 +301,8 @@ namespace rosneuro_sharpbridge
                     msg_nchan.data = config.num_channels;
                     msg_srate.data = config.sample_rate;
                 }
-                lock (config.SocketLock) { 
+                lock (config.SocketLock)
+                {
                     config.socket.Publish(config.get_nchan_topic_id, msg_nchan);
                     config.socket.Publish(config.get_srate_topic_id, msg_srate);
                 }
@@ -284,14 +313,16 @@ namespace rosneuro_sharpbridge
     }
 
 
-    public class WorkerDataStreamer: Worker
+    public class WorkerDataStreamer : Worker
     {
         public WorkerDataStreamer(SharedConfig config) : base(config) { }
 
-        public bool ReinitHeadset() {
+        public bool ReinitHeadset()
+        {
             bool result = false;
 
-            lock (config.ConfigLock){
+            lock (config.ConfigLock)
+            {
                 if (!config.headset_initialized)
                 {
                     //TODO: stop/restart the headset with new settings 
@@ -306,28 +337,43 @@ namespace rosneuro_sharpbridge
 
         public void Loop()
         {
-            var msec_pause = ( config.data_streamer_hz < 1 ) ? 0 : 1000 / config.data_streamer_hz;
-            var msg_data = new std_msgs.String();
+            var msec_pause = (config.data_streamer_hz < 1) ? 0 : 1000 / config.data_streamer_hz;
             var start_time = DateTime.Now;
+
+            bool streaming_active;
+            string msg;
+            std_msgs.String msg_data = new std_msgs.String();
             while (true)
             {
-                if ( ReinitHeadset() ) {
-                    start_time = DateTime.Now;
+                lock (config.ConfigLock)
+                {
+                    streaming_active = config.steaming_data;
                 }
 
-                lock (config.ConfigLock){
-                    msg_data.data = DateTime.Now.Subtract(start_time).TotalMilliseconds.ToString();
+                if (streaming_active)
+                {
+                    if (ReinitHeadset())
+                    {
+                        start_time = DateTime.Now;
+                    }
+
+                    msg = DateTime.Now.Subtract(start_time).TotalMilliseconds.ToString();
+
+                    msg_data.data = msg;
                 }
 
-                lock (config.SocketLock) { 
+                lock (config.SocketLock)
+                {
                     config.socket.Publish(config.get_data_topic_id, msg_data);
                 }
-                
-                
-                Thread.Sleep(msec_pause);
             }
+
+
+            Thread.Sleep(msec_pause);
         }
     }
+}
 
+    #endregion
 
 }
