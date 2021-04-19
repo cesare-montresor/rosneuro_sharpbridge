@@ -1,19 +1,11 @@
-# This project is a stub
-
-## Known TODOs:
-- incorrect value-passing between thread
-- Data type it's a std_msg.String
-
-
-
+# TODO: 
+Refactor the code according to the desired SDK.
 
 # Summary
 
 The project aims to provide a customizable ros-compatible EEG acquisition node wirtten in C# for the ROSNeuro architecture.
 The project leverages sharp-ros library to implemente the bridge. 
 Internally rossharp use websockets to integrate with the rest of the architecture. The standard way to provide this integration is via rosbridge_server, on roscore side.
-
-
 
 
 ## Setup rosbridge_server
