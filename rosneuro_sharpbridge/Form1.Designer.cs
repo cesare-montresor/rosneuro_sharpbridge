@@ -31,7 +31,6 @@ namespace rosneuro_sharpbridge
         {
             this.Connect = new System.Windows.Forms.Button();
             this.addressTxt = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
             this.outputLbl = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
@@ -51,15 +50,7 @@ namespace rosneuro_sharpbridge
             this.addressTxt.Name = "addressTxt";
             this.addressTxt.Size = new System.Drawing.Size(351, 20);
             this.addressTxt.TabIndex = 1;
-            this.addressTxt.Text = "ws://192.168.1.37:8080";
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 62);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(0, 13);
-            this.label1.TabIndex = 2;
+            this.addressTxt.Text = "ws://192.168.1.38:8080";
             // 
             // outputLbl
             // 
@@ -74,7 +65,6 @@ namespace rosneuro_sharpbridge
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(454, 367);
             this.Controls.Add(this.outputLbl);
-            this.Controls.Add(this.label1);
             this.Controls.Add(this.addressTxt);
             this.Controls.Add(this.Connect);
             this.Name = "Form1";
@@ -88,7 +78,6 @@ namespace rosneuro_sharpbridge
 
         private System.Windows.Forms.Button Connect;
         private System.Windows.Forms.TextBox addressTxt;
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label outputLbl;
     }
 }

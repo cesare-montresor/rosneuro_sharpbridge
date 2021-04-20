@@ -25,6 +25,7 @@ namespace rosneuro_sharpbridge
         public int controller_hz;
         public int data_streamer_hz;
 
+
         // ####################
         // MUTEX ON: SocketLock
         // ####################
@@ -38,11 +39,7 @@ namespace rosneuro_sharpbridge
         public string set_nchan_topic_id;
         public string get_srate_topic_id; // sample_rate
         public string set_srate_topic_id;
-
-
-
-
-
+        
         // ####################
         // MUTEX ON: ConfigLock
         // ####################
@@ -74,8 +71,7 @@ namespace rosneuro_sharpbridge
 
         public string OPTION_SAMPLE_RATE = "sample_rate";
         public string OPTION_NUM_CHANNELS = "num_channels";
-        public string OPTION_STREAMING_DATA = "steaming_data";
-
+        public string OPTION_STREAMING_DATA = "streaming_data";
 
         public SharedConfig config = new SharedConfig();
 
@@ -89,7 +85,7 @@ namespace rosneuro_sharpbridge
             config.num_channels = num_channels;
             config.steaming_data = autostart;
 
-            config.controller_hz = 1;
+            config.controller_hz = 1;  
             config.data_streamer_hz = 1;
 
             config.controller_worker = new WorkerController(config);
@@ -104,14 +100,21 @@ namespace rosneuro_sharpbridge
         }
 
         #region control the node via c#/form
-        public void Connect(string uri)
+        public bool Connect(string uri)
         {
-            if (config.socket == null)
+            try
             {
-                config.socket = new RosSocket(new RosSharp.RosBridgeClient.Protocols.WebSocketSharpProtocol(uri));
-                Init();
-                StartController();
+                if (config.socket == null)
+                {
+                    config.socket = new RosSocket(new RosSharp.RosBridgeClient.Protocols.WebSocketSharpProtocol(uri));
+                    Init();
+                    StartController();
+                }
             }
+            catch {
+                return false;
+            }
+            return true;
         }
 
         public void Diconnect()
@@ -131,14 +134,15 @@ namespace rosneuro_sharpbridge
 
         public void Init()
         {
+
             lock (config.SocketLock)
             {
                 //Data
                 config.get_data_topic_id = config.socket.Advertise<std_msgs.String>(BuildTopic(TOPIC_DATA));
 
                 //Data on/off
-                config.get_strm_topic_id = config.socket.Advertise<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_GET, OPTION_STREAMING_DATA));
-                config.set_strm_topic_id = config.socket.Subscribe<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_SET, OPTION_STREAMING_DATA), config.node.OnSampleRateUpdate, queue_length: 1);
+                config.get_strm_topic_id = config.socket.Advertise<std_msgs.Bool>(BuildTopic(TOPIC_SETTINGS_GET, OPTION_STREAMING_DATA));
+                config.set_strm_topic_id = config.socket.Subscribe<std_msgs.Bool>(BuildTopic(TOPIC_SETTINGS_SET, OPTION_STREAMING_DATA), config.node.OnStreamingDataUpdate, queue_length: 1);
 
                 //Info
                 config.get_srate_topic_id = config.socket.Advertise<std_msgs.Int32>(BuildTopic(TOPIC_SETTINGS_GET, OPTION_SAMPLE_RATE));
@@ -366,13 +370,10 @@ namespace rosneuro_sharpbridge
                 {
                     config.socket.Publish(config.get_data_topic_id, msg_data);
                 }
-            }
-
-
-            Thread.Sleep(msec_pause);
+                Thread.Sleep(msec_pause);
+            }           
         }
     }
-}
 
     #endregion
 

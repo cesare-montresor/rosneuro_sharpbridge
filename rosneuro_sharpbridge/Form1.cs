@@ -21,7 +21,7 @@ namespace rosneuro_sharpbridge
 {
     public partial class Form1 : Form
     {
-        private rosneuro_sharpbridge connector = new rosneuro_sharpbridge();
+        private rosneuro_sharpbridge rosnode = new rosneuro_sharpbridge();
 
         public Form1()
         {
@@ -30,10 +30,13 @@ namespace rosneuro_sharpbridge
         
         private void button1_Click(object sender, EventArgs e)
         {
-            var addressPort = addressTxt.Text.ToString(); //"ws://192.168.1.37:8080";
-            connector.Connect(addressPort);
-            connector.StartDataStreamer();
+            var addressPort = addressTxt.Text.ToString(); 
+            var connected = rosnode.Connect(addressPort);
+            if (connected) {
+                rosnode.StartDataStreamer();
+            }
 
+            outputLbl.Text = connected ? "Connected!" : "Connection failed";
         }
 
     }
